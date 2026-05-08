@@ -1,0 +1,62 @@
+<resources>
+    <string name="app_name">备忘录</string>
+    <string name="title_notes">我的笔记</string>
+    <string name="hint_search">搜索笔记...</string>
+    <string name="action_add">添加笔记</string>
+    <string name="action_edit">编辑笔记</string>
+    <string name="action_delete">删除</string>
+    <string name="action_settings">设置</string>
+    <string name="action_sort">排序</string>
+    <string name="action_refresh">刷新</string>
+    <string name="category_all">全部</string>
+    <string name="category_work">工作</string>
+    <string name="category_study">学习</string>
+    <string name="category_life">生活</string>
+    <string name="category_important">重要</string>
+    <string name="priority_high">高</string>
+    <string name="priority_medium">中</string>
+    <string name="priority_low">低</string>
+    <string name="sort_time">按时间排序</string>
+    <string name="sort_priority">按优先级排序</string>
+    <string name="no_notes">暂无笔记</string>
+    <string name="no_search_result">未找到匹配的笔记</string>
+    <string name="confirm_delete">确定删除这条笔记吗？</string>
+    <string name="deleted_success">删除成功</string>
+    <string name="saved_success">保存成功</string>
+    <string name="title_add_note">新建笔记</string>
+    <string name="title_edit_note">编辑笔记</string>
+    <string name="label_title">标题</string>
+    <string name="label_content">内容</string>
+    <string name="label_category">分类</string>
+    <string name="label_priority">优先级</string>
+    <string name="label_reminder">提醒时间</string>
+    <string name="hint_title">输入标题...</string>
+    <string name="hint_content">输入内容...</string>
+    <string name="daily_quote">每日一句，伴你成长</string>
+    <string name="tap_to_change">点击切换下一句</string>
+    <string name="copied_success">已复制到剪贴板</string>
+    <string name="expired_notes">过期提醒</string>
+    <string name="cache_clear">清理缓存</string>
+    <string name="cache_warning">笔记数量已超过20条，建议清理无用笔记</string>
+    <string name="cache_cleared">清理成功</string>
+    <string name="settings">设置</string>
+    <string name="about">关于</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="set_reminder">设置提醒</string>
+
+    <string-array name="categories">
+        <item>全部</item>
+        <item>工作</item>
+        <item>学习</item>
+        <item>生活</item>
+        <item>重要</item>
+    </string-array>
+
+    <string-array name="category_options">
+        <item>工作</item>
+        <item>学习</item>
+        <item>生活</item>
+        <item>重要</item>
+    </string-array>
+</resources>
