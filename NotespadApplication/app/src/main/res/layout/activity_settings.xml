@@ -190,6 +190,39 @@
                         app:thumbTint="@color/primary_green"
                         app:trackTint="@color/background_search" />
                 </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/settings_item_bg"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_todo"
+                        app:tint="@color/primary_green"
+                        android:layout_marginEnd="12dp"
+                        android:layout_gravity="center_vertical" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/notify_todo"
+                        android:textSize="16sp"
+                        android:textColor="@color/text_primary"
+                        android:layout_gravity="center_vertical" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/sw_notify_todo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        app:thumbTint="@color/primary_green"
+                        app:trackTint="@color/background_search" />
+                </LinearLayout>
             </LinearLayout>
 
             <View

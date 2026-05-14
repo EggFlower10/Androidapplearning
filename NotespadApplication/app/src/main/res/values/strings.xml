@@ -71,6 +71,23 @@
     <string name="version">版本 1.0.0</string>
     <string name="developer">开发者：备忘录团队</string>
 
+    <string name="todo_title">待办事项</string>
+    <string name="today_todos">今日待办</string>
+    <string name="view_all">查看全部</string>
+    <string name="todo_hint">添加新的待办事项...</string>
+    <string name="set_deadline">设置截止</string>
+    <string name="filter_all">全部</string>
+    <string name="filter_uncompleted">未完成</string>
+    <string name="filter_completed">已完成</string>
+    <string name="todo_added">待办已添加</string>
+    <string name="todo_updated">待办已更新</string>
+    <string name="todo_deleted">待办已删除</string>
+    <string name="todo_completed">已完成!</string>
+    <string name="todo_uncompleted">恢复待办</string>
+    <string name="todo_reminder_title">待办提醒</string>
+    <string name="todo_reminder_text">您有待办事项即将到期</string>
+    <string name="notify_todo">待办提醒通知</string>
+
     <string-array name="categories">
         <item>全部</item>
         <item>工作</item>
@@ -83,6 +100,15 @@
         <item>工作</item>
         <item>学习</item>
         <item>生活</item>
+        <item>重要</item>
+    </string-array>
+
+    <string-array name="tag_options">
+        <item>默认</item>
+        <item>工作</item>
+        <item>学习</item>
+        <item>生活</item>
+        <item>个人</item>
         <item>重要</item>
     </string-array>
 </resources>

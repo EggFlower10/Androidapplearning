@@ -4,6 +4,7 @@
     <color name="primary_green">#FF6BBE92</color>
     <color name="primary_green_dark">#FF4CAF50</color>
     <color name="primary_green_light">#FFE8F5F0</color>
+    <color name="text_strikethrough">#FF9E9E9E</color>
     <color name="text_primary">#FF333333</color>
     <color name="text_secondary">#FF666666</color>
     <color name="text_hint">#FF999999</color>

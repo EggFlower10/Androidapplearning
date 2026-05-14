@@ -5,8 +5,9 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageButton;
-import androidx.appcompat.widget.SearchView;  // ✅ 正确
+import androidx.appcompat.widget.SearchView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,15 +16,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.myapplication.adapter.HorizontalTodoAdapter;
 import com.example.myapplication.adapter.NoteAdapter;
 import com.example.myapplication.database.NoteDatabase;
 import com.example.myapplication.entity.Note;
+import com.example.myapplication.entity.Todo;
 import com.example.myapplication.network.QuoteService;
 import com.example.myapplication.utils.ClipboardUtil;
 import com.example.myapplication.utils.TimeUtil;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -40,6 +44,10 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvQuote;
     private TextView tvAuthor;
     private TextView tvExpiredCount;
+    private HorizontalTodoAdapter todayTodoAdapter;
+    private RecyclerView rvTodayTodos;
+    private View llTodoHeader;
+    private Button btnViewAllTodos;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,9 +72,35 @@ public class MainActivity extends AppCompatActivity {
         tvAuthor = findViewById(R.id.tv_author);
         tvExpiredCount = findViewById(R.id.tv_expired_count);
 
+        llTodoHeader = findViewById(R.id.ll_todo_header);
+        rvTodayTodos = findViewById(R.id.rv_today_todos);
+        btnViewAllTodos = findViewById(R.id.btn_view_all_todos);
+
+        rvTodayTodos.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        todayTodoAdapter = new HorizontalTodoAdapter();
+        rvTodayTodos.setAdapter(todayTodoAdapter);
+
+        todayTodoAdapter.setOnTodoClickListener(new HorizontalTodoAdapter.OnTodoClickListener() {
+            @Override
+            public void onTodoCompleteClick(Todo todo, boolean completed) {
+                completeTodo(todo, completed);
+            }
+        });
+
+        btnViewAllTodos.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, TodoActivity.class);
+            startActivity(intent);
+        });
+
         FloatingActionButton fabAdd = findViewById(R.id.fab_add);
         fabAdd.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, AddNoteActivity.class);
+            startActivity(intent);
+        });
+
+        ImageButton btnTodo = findViewById(R.id.btn_todo);
+        btnTodo.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, TodoActivity.class);
             startActivity(intent);
         });
 
@@ -132,6 +166,75 @@ public class MainActivity extends AppCompatActivity {
             loadNotes();
             Toast.makeText(this, sortByPriority ? R.string.sort_priority : R.string.sort_time, Toast.LENGTH_SHORT).show();
         });
+
+        loadTodayTodos();
+    }
+
+    private void loadTodayTodos() {
+        new Thread(() -> {
+            long currentTime = System.currentTimeMillis();
+            long endOfToday = getEndOfToday();
+
+            List<Todo> allTodos = noteDatabase.todoDao().getUncompletedTodos();
+            List<Todo> todayTodos = new ArrayList<>();
+
+            for (Todo todo : allTodos) {
+                if (todo.getDeadline() > 0) {
+                    if (todo.getDeadline() <= endOfToday && todo.getDeadline() >= getStartOfToday()) {
+                        todayTodos.add(todo);
+                    } else if (todo.getDeadline() < currentTime) {
+                        todayTodos.add(todo);
+                    }
+                }
+                if (todayTodos.size() >= 5) {
+                    break;
+                }
+            }
+
+            final boolean hasTodos = !todayTodos.isEmpty();
+            runOnUiThread(() -> {
+                if (hasTodos) {
+                    llTodoHeader.setVisibility(View.VISIBLE);
+                    rvTodayTodos.setVisibility(View.VISIBLE);
+                    todayTodoAdapter.setTodos(todayTodos);
+                } else {
+                    llTodoHeader.setVisibility(View.GONE);
+                    rvTodayTodos.setVisibility(View.GONE);
+                }
+            });
+        }).start();
+    }
+
+    private long getStartOfToday() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTimeInMillis();
+    }
+
+    private long getEndOfToday() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        calendar.set(Calendar.MILLISECOND, 999);
+        return calendar.getTimeInMillis();
+    }
+
+    private void completeTodo(Todo todo, boolean completed) {
+        new Thread(() -> {
+            todo.setCompleted(completed);
+            noteDatabase.todoDao().updateTodo(todo);
+
+            runOnUiThread(() -> {
+                loadTodayTodos();
+                if (completed) {
+                    Toast.makeText(this, R.string.todo_completed, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }).start();
     }
 
     private void fetchQuote() {
@@ -196,7 +299,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (!currentKeyword.isEmpty()) {
-                String keyword = "%" + currentKeyword + "%";
                 matchKeyword = (note.getTitle() != null && note.getTitle().toLowerCase().contains(currentKeyword.toLowerCase())) ||
                         (note.getContent() != null && note.getContent().toLowerCase().contains(currentKeyword.toLowerCase()));
             }
@@ -241,7 +343,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             noteDatabase.noteDao().deleteNote(note);
             runOnUiThread(() -> {
-                Toast.makeText(MainActivity.this, R.string.deleted_success, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.deleted_success, Toast.LENGTH_SHORT).show();
                 loadNotes();
             });
         }).start();
@@ -283,7 +385,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             noteDatabase.noteDao().deleteAllNotes();
             runOnUiThread(() -> {
-                Toast.makeText(MainActivity.this, R.string.cache_cleared, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.cache_cleared, Toast.LENGTH_SHORT).show();
                 loadNotes();
             });
         }).start();
@@ -294,5 +396,6 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         loadNotes();
         checkExpiredNotes();
+        loadTodayTodos();
     }
 }

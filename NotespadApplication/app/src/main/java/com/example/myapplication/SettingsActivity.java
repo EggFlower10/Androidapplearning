@@ -16,6 +16,7 @@ import com.example.myapplication.database.NoteDatabase;
 public class SettingsActivity extends AppCompatActivity {
     private SwitchCompat swNotifySave;
     private SwitchCompat swNotifyExpired;
+    private SwitchCompat swNotifyTodo;
     private Button btnTheme;
     private SharedPreferences preferences;
 
@@ -39,6 +40,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         swNotifySave = findViewById(R.id.sw_notify_save);
         swNotifyExpired = findViewById(R.id.sw_notify_expired);
+        swNotifyTodo = findViewById(R.id.sw_notify_todo);
 
         swNotifySave.setOnCheckedChangeListener((buttonView, isChecked) -> {
             saveSetting("notify_save", isChecked);
@@ -54,6 +56,13 @@ public class SettingsActivity extends AppCompatActivity {
                     Toast.LENGTH_SHORT).show();
         });
 
+        swNotifyTodo.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            saveSetting("notify_todo", isChecked);
+            Toast.makeText(SettingsActivity.this, 
+                    isChecked ? "待办提醒通知已开启" : "待办提醒通知已关闭", 
+                    Toast.LENGTH_SHORT).show();
+        });
+
         Button btnClearCache = findViewById(R.id.btn_clear_cache);
         btnClearCache.setOnClickListener(v -> clearCache());
     }
@@ -64,6 +73,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         swNotifySave.setChecked(preferences.getBoolean("notify_save", true));
         swNotifyExpired.setChecked(preferences.getBoolean("notify_expired", true));
+        swNotifyTodo.setChecked(preferences.getBoolean("notify_todo", true));
     }
 
     private void saveSetting(String key, boolean value) {
