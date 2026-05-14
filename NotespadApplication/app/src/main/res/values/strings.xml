@@ -46,6 +46,31 @@
     <string name="set_reminder">设置提醒</string>
     <string name="edit_time_hint">编辑时间：</string>
 
+    <string name="theme_mode">主题模式</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">浅色模式</string>
+    <string name="theme_dark">深色模式</string>
+    <string name="theme_preview">模式预览</string>
+    <string name="light_preview">浅色</string>
+    <string name="dark_preview">深色</string>
+
+    <string name="basic_settings">基础设置</string>
+    <string name="notification_settings">通知设置</string>
+    <string name="data_settings">数据管理</string>
+    <string name="clean_settings">清理缓存</string>
+
+    <string name="notify_save">保存成功通知</string>
+    <string name="notify_expired">过期提醒通知</string>
+
+    <string name="backup_data">数据备份</string>
+    <string name="restore_data">数据恢复</string>
+    <string name="backup">备份</string>
+    <string name="restore">恢复</string>
+    <string name="clear">清理</string>
+
+    <string name="version">版本 1.0.0</string>
+    <string name="developer">开发者：备忘录团队</string>
+
     <string-array name="categories">
         <item>全部</item>
         <item>工作</item>
