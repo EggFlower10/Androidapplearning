@@ -44,6 +44,7 @@
     <string name="save">保存</string>
     <string name="cancel">取消</string>
     <string name="set_reminder">设置提醒</string>
+    <string name="edit_time_hint">编辑时间：</string>
 
     <string-array name="categories">
         <item>全部</item>

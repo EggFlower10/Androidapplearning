@@ -4,45 +4,52 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_cream">
+    android:background="@drawable/edit_bg_gradient">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary_green">
+        android:background="@color/background_cream"
+        android:orientation="horizontal"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
+        android:gravity="center_vertical">
 
-        <ImageButton
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_back"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_back"
-            app:tint="@color/white"
+            android:layout_height="40dp"
+            android:text="@string/cancel"
+            android:textColor="@color/primary_green"
+            android:textSize="16sp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="8dp" />
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:minWidth="48dp" />
 
         <TextView
             android:id="@+id/tv_title"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="@string/title_add_note"
-            android:textColor="@color/white"
-            android:textSize="20sp"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:layout_gravity="center" />
+            android:textAlignment="center" />
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_save"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:text="@string/save"
-            android:textColor="@color/white"
-            android:background="@color/primary_green_dark"
+            android:textColor="@color/primary_green"
+            android:textSize="16sp"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
-            android:textSize="16sp"
-            android:layout_gravity="end" />
-    </androidx.appcompat.widget.Toolbar>
+            android:minWidth="64dp" />
+    </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"
@@ -55,36 +62,75 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <EditText
-                android:id="@+id/et_title"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/hint_title"
-                android:textSize="18sp"
-                android:textColor="@color/text_primary"
-                android:background="@color/background_search"
-                android:padding="12dp"
+                android:background="@drawable/edit_text_selector"
                 android:layout_marginBottom="12dp"
-                android:inputType="textCapSentences" />
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp">
 
-            <EditText
-                android:id="@+id/et_content"
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_note"
+                    app:tint="@color/primary_green"
+                    android:layout_marginRight="12dp"
+                    android:layout_gravity="center_vertical" />
+
+                <EditText
+                    android:id="@+id/et_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="@string/hint_title"
+                    android:textSize="18sp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint"
+                    android:textStyle="bold"
+                    android:background="@null"
+                    android:inputType="textCapSentences"
+                    android:textCursorDrawable="@null" />
+            </LinearLayout>
+
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:hint="@string/hint_content"
-                android:textSize="16sp"
-                android:textColor="@color/text_primary"
-                android:background="@color/background_search"
-                android:padding="12dp"
-                android:layout_marginBottom="12dp"
-                android:gravity="top"
-                android:inputType="textMultiLine" />
+                android:layout_height="240dp"
+                android:layout_marginBottom="16dp">
+
+                <EditText
+                    android:id="@+id/et_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:hint="@string/hint_content"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint"
+                    android:background="@null"
+                    android:padding="16dp"
+                    android:gravity="top"
+                    android:inputType="textMultiLine"
+                    android:textCursorDrawable="@null" />
+
+                <TextView
+                    android:id="@+id/tv_char_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0/500"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_hint"
+                    android:layout_alignParentBottom="true"
+                    android:layout_alignParentEnd="true"
+                    android:padding="8dp" />
+            </RelativeLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -92,22 +138,23 @@
                     android:text="@string/label_category"
                     android:textSize="16sp"
                     android:textColor="@color/text_primary"
-                    android:layout_marginRight="12dp"
+                    android:layout_marginEnd="12dp"
                     android:layout_gravity="center_vertical" />
 
                 <Spinner
                     android:id="@+id/sp_category"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
-                    android:background="@color/background_search" />
+                    android:background="@drawable/edit_input_bg"
+                    android:paddingStart="12dp" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -115,44 +162,50 @@
                     android:text="@string/label_priority"
                     android:textSize="16sp"
                     android:textColor="@color/text_primary"
-                    android:layout_marginRight="12dp"
+                    android:layout_marginEnd="12dp"
                     android:layout_gravity="center_vertical" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
                     <Button
                         android:id="@+id/btn_priority_high"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="48dp"
                         android:layout_weight="1"
                         android:text="@string/priority_high"
-                        android:textColor="@color/priority_high"
-                        android:background="@color/background_search"
-                        android:textSize="14sp" />
+                        android:textColor="@color/text_primary"
+                        android:background="@drawable/priority_button_bg"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="4dp" />
 
                     <Button
                         android:id="@+id/btn_priority_medium"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="48dp"
                         android:layout_weight="1"
                         android:text="@string/priority_medium"
-                        android:textColor="@color/priority_medium"
-                        android:background="@color/background_search"
-                        android:textSize="14sp" />
+                        android:textColor="@color/text_primary"
+                        android:background="@drawable/priority_button_bg"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="4dp" />
 
                     <Button
                         android:id="@+id/btn_priority_low"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="48dp"
                         android:layout_weight="1"
                         android:text="@string/priority_low"
-                        android:textColor="@color/priority_low"
-                        android:background="@color/background_search"
-                        android:textSize="14sp" />
+                        android:textColor="@color/text_primary"
+                        android:background="@drawable/priority_button_bg"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -160,7 +213,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -168,19 +221,124 @@
                     android:text="@string/label_reminder"
                     android:textSize="16sp"
                     android:textColor="@color/text_primary"
-                    android:layout_marginRight="12dp"
+                    android:layout_marginEnd="12dp"
                     android:layout_gravity="center_vertical" />
 
                 <Button
                     android:id="@+id/btn_reminder"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
                     android:text="@string/set_reminder"
-                    android:textColor="@color/primary_green"
-                    android:background="@color/background_search"
+                    android:textColor="@color/text_primary"
+                    android:background="@drawable/edit_input_bg"
                     android:textSize="14sp" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="#CCEEEEEE"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/btn_bold"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_bold"
+                app:tint="@color/primary_green"
+                android:background="@drawable/action_button_selector"
+                android:padding="8dp" />
+
+            <ImageView
+                android:id="@+id/btn_align"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_align_left"
+                app:tint="@color/primary_green"
+                android:background="@drawable/action_button_selector"
+                android:padding="8dp"
+                android:layout_marginStart="8dp" />
+
+            <ImageView
+                android:id="@+id/btn_quick_category"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_tag"
+                app:tint="@color/primary_green"
+                android:background="@drawable/action_button_selector"
+                android:padding="8dp"
+                android:layout_marginStart="8dp" />
+
+            <TextView
+                android:id="@+id/tv_edit_time"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/edit_time_hint"
+                android:textSize="12sp"
+                android:textColor="@color/text_hint"
+                android:textAlignment="center" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/bottom_sheet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background_cream"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:elevation="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/label_category"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold"
+            android:padding="16dp" />
+
+        <Button
+            android:id="@+id/btn_cat_work"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/category_work"
+            android:textColor="@color/text_primary"
+            android:background="?attr/selectableItemBackground" />
+
+        <Button
+            android:id="@+id/btn_cat_study"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/category_study"
+            android:textColor="@color/text_primary"
+            android:background="?attr/selectableItemBackground" />
+
+        <Button
+            android:id="@+id/btn_cat_life"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/category_life"
+            android:textColor="@color/text_primary"
+            android:background="?attr/selectableItemBackground" />
+
+        <Button
+            android:id="@+id/btn_cat_important"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/category_important"
+            android:textColor="@color/text_primary"
+            android:background="?attr/selectableItemBackground" />
+    </LinearLayout>
 </LinearLayout>
