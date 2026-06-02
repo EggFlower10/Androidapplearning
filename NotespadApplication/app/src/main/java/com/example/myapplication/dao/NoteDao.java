@@ -12,21 +12,27 @@ import java.util.List;
 
 @Dao
 public interface NoteDao {
-    @Query("SELECT * FROM notes ORDER BY updateTime DESC")
+    @Query("SELECT * FROM notes ORDER BY sortOrder ASC, updateTime DESC")
     List<Note> getAllNotes();
 
-    @Query("SELECT * FROM notes WHERE category = :category ORDER BY updateTime DESC")
+    @Query("SELECT * FROM notes ORDER BY sortOrder ASC")
+    List<Note> getAllNotesBySortOrder();
+
+    @Query("SELECT * FROM notes WHERE category = :category ORDER BY sortOrder ASC, updateTime DESC")
     List<Note> getNotesByCategory(String category);
 
-    @Query("SELECT * FROM notes WHERE title LIKE :keyword OR content LIKE :keyword ORDER BY updateTime DESC")
+    @Query("SELECT * FROM notes WHERE title LIKE :keyword OR content LIKE :keyword ORDER BY sortOrder ASC, updateTime DESC")
     List<Note> searchNotes(String keyword);
 
-    @Query("SELECT * FROM notes WHERE category = :category AND (title LIKE :keyword OR content LIKE :keyword) ORDER BY updateTime DESC")
+    @Query("SELECT * FROM notes WHERE category = :category AND (title LIKE :keyword OR content LIKE :keyword) ORDER BY sortOrder ASC, updateTime DESC")
     List<Note> searchNotesByCategory(String category, String keyword);
 
     @Query("SELECT * FROM notes ORDER BY " +
            "CASE priority WHEN 'high' THEN 3 WHEN 'medium' THEN 2 ELSE 1 END DESC, updateTime DESC")
     List<Note> getNotesSortedByPriority();
+
+    @Query("SELECT * FROM notes ORDER BY updateTime ASC")
+    List<Note> getAllNotesByCreateTimeAsc();
 
     @Query("SELECT * FROM notes WHERE reminderTime > 0 AND reminderTime < :currentTime ORDER BY reminderTime ASC")
     List<Note> getExpiredNotes(long currentTime);

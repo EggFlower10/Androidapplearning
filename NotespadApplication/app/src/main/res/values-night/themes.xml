@@ -1,12 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.MyApplication" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/primary_green</item>
-        <item name="colorPrimaryVariant">@color/primary_green_dark</item>
+        <item name="colorPrimary">@color/add_button</item>
+        <item name="colorPrimaryVariant">@color/green_gradient_end</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/primary_green</item>
-        <item name="colorSecondaryVariant">@color/primary_green_dark</item>
+        <item name="colorSecondary">@color/add_button</item>
+        <item name="colorSecondaryVariant">@color/green_gradient_end</item>
         <item name="colorOnSecondary">@color/white</item>
-        <item name="android:colorBackground">@color/background_cream</item>
+        <item name="android:colorBackground">@color/background_morandi</item>
         <item name="colorSurface">@color/white</item>
         <item name="colorOnSurface">@color/text_primary</item>
         <item name="android:textColorPrimary">@color/text_primary</item>

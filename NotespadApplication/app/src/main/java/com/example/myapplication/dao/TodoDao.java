@@ -38,4 +38,7 @@ public interface TodoDao {
 
     @Query("DELETE FROM todos")
     void deleteAllTodos();
+
+    @Query("SELECT * FROM todos WHERE id = :id")
+    Todo getTodoById(long id);
 }

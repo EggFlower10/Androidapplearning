@@ -1,12 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.MyApplication" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/primary_green</item>
-        <item name="colorPrimaryVariant">@color/primary_green_dark</item>
+        <item name="colorPrimary">@color/add_button</item>
+        <item name="colorPrimaryVariant">@color/green_gradient_end</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/primary_green</item>
-        <item name="colorSecondaryVariant">@color/primary_green_dark</item>
+        <item name="colorSecondary">@color/add_button</item>
+        <item name="colorSecondaryVariant">@color/green_gradient_end</item>
         <item name="colorOnSecondary">@color/white</item>
-        <item name="android:colorBackground">@color/background_cream</item>
+        <item name="android:colorBackground">@color/background_morandi</item>
         <item name="colorSurface">@color/white</item>
         <item name="colorOnSurface">@color/text_primary</item>
         <item name="android:textColorPrimary">@color/text_primary</item>
@@ -29,26 +29,26 @@
     </style>
 
     <style name="AppToolbar" parent="Widget.MaterialComponents.Toolbar">
-        <item name="android:background">@color/primary_green</item>
+        <item name="android:background">@color/add_button</item>
         <item name="titleTextColor">@color/white</item>
         <item name="subtitleTextColor">@color/white</item>
     </style>
 
     <style name="AppButton" parent="Widget.MaterialComponents.Button">
-        <item name="android:background">@color/primary_green</item>
+        <item name="android:background">@color/add_button</item>
         <item name="android:textColor">@color/white</item>
         <item name="cornerRadius">8dp</item>
     </style>
 
     <style name="AppEditText" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <item name="boxBackgroundColor">@color/background_search</item>
+        <item name="boxBackgroundColor">@color/card_background</item>
         <item name="cornerRadius">8dp</item>
         <item name="hintTextColor">@color/text_hint</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
     <style name="AppCard" parent="Widget.MaterialComponents.CardView">
-        <item name="cardBackgroundColor">@color/white</item>
+        <item name="cardBackgroundColor">@color/card_background</item>
         <item name="cardCornerRadius">8dp</item>
         <item name="cardElevation">2dp</item>
     </style>

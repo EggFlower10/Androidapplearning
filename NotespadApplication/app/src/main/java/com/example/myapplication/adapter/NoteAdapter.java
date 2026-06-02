@@ -1,27 +1,29 @@
 package com.example.myapplication.adapter;
 
-import android.content.Context;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.R;
 import com.example.myapplication.entity.Note;
 import com.example.myapplication.utils.TimeUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
     private List<Note> notes;
+    private List<Note> selectedNotes = new ArrayList<>();
     private OnItemClickListener listener;
     private OnItemLongClickListener longClickListener;
+    private long latestUpdateTime = Long.MIN_VALUE;
+    private boolean isSelectMode = false;
 
     public interface OnItemClickListener {
         void onItemClick(Note note);
@@ -29,6 +31,16 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
     public interface OnItemLongClickListener {
         void onItemLongClick(Note note);
+    }
+
+    public interface OnSelectChangeListener {
+        void onSelectChange(int count);
+    }
+
+    private OnSelectChangeListener selectChangeListener;
+
+    public void setOnSelectChangeListener(OnSelectChangeListener listener) {
+        this.selectChangeListener = listener;
     }
 
     public NoteAdapter(List<Note> notes, OnItemClickListener listener, OnItemLongClickListener longClickListener) {
@@ -39,7 +51,58 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
     public void updateNotes(List<Note> newNotes) {
         this.notes = newNotes;
+        selectedNotes.clear();
         notifyDataSetChanged();
+    }
+
+    public void setLatestUpdateTime(long latestTime) {
+        this.latestUpdateTime = latestTime;
+        notifyDataSetChanged();
+    }
+
+    public void setSelectMode(boolean selectMode) {
+        this.isSelectMode = selectMode;
+        if (!selectMode) {
+            selectedNotes.clear();
+        }
+        notifyDataSetChanged();
+    }
+
+    public boolean isSelectMode() {
+        return isSelectMode;
+    }
+
+    public void selectAll() {
+        selectedNotes.clear();
+        selectedNotes.addAll(notes);
+        notifyDataSetChanged();
+        if (selectChangeListener != null) {
+            selectChangeListener.onSelectChange(selectedNotes.size());
+        }
+    }
+
+    public void deselectAll() {
+        selectedNotes.clear();
+        notifyDataSetChanged();
+        if (selectChangeListener != null) {
+            selectChangeListener.onSelectChange(0);
+        }
+    }
+
+    public List<Note> getSelectedNotes() {
+        return selectedNotes;
+    }
+
+    private void toggleSelect(Note note) {
+        if (selectedNotes.contains(note)) {
+            selectedNotes.remove(note);
+        } else {
+            selectedNotes.add(note);
+        }
+        notifyDataSetChanged();
+        if (selectChangeListener != null) {
+            selectChangeListener.onSelectChange(selectedNotes.size());
+        }
     }
 
     @NonNull
@@ -54,41 +117,56 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         Note note = notes.get(position);
         holder.tvTitle.setText(note.getTitle() != null ? note.getTitle() : "无标题");
         holder.tvContent.setText(note.getContent() != null ? note.getContent() : "");
-        holder.tvCategory.setText(note.getCategory() != null ? note.getCategory() : "未分类");
-        holder.tvTime.setText(TimeUtil.formatDateTime(note.getUpdateTime()));
+        holder.tvTime.setText("🍂 " + TimeUtil.formatDateTime(note.getUpdateTime()));
 
-        holder.vPriority.setBackgroundColor(getPriorityColor(note.getPriority()));
+        holder.tvLatest.setVisibility(isLatestNote(note) ? View.VISIBLE : View.GONE);
 
-        boolean isExpired = TimeUtil.isExpired(note.getReminderTime());
-        holder.ivExpired.setVisibility(isExpired ? View.VISIBLE : View.GONE);
-        holder.cvNote.setCardBackgroundColor(isExpired ? 
-                holder.itemView.getContext().getResources().getColor(R.color.expired_bg) :
-                holder.itemView.getContext().getResources().getColor(R.color.background_cream));
+        holder.cbSelect.setVisibility(isSelectMode ? View.VISIBLE : View.GONE);
+        holder.cbSelect.setChecked(selectedNotes.contains(note));
 
-        holder.itemView.setOnClickListener(v -> {
+        if (isSelectMode) {
+            holder.itemView.setOnClickListener(v -> {
+                toggleSelect(note);
+            });
+        } else {
+            holder.itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onItemClick(note);
+                }
+            });
+        }
+
+        holder.itemView.setOnLongClickListener(v -> {
+            if (!isSelectMode && longClickListener != null) {
+                longClickListener.onItemLongClick(note);
+            }
+            return true;
+        });
+
+        holder.ivEdit.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(note);
             }
         });
 
-        holder.itemView.setOnLongClickListener(v -> {
+        holder.ivDelete.setOnClickListener(v -> {
             if (longClickListener != null) {
                 longClickListener.onItemLongClick(note);
             }
-            return true;
+        });
+
+        holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked != selectedNotes.contains(note)) {
+                toggleSelect(note);
+            }
         });
     }
 
-    private int getPriorityColor(String priority) {
-        switch (priority) {
-            case "high":
-                return Color.parseColor("#FFE53935");
-            case "medium":
-                return Color.parseColor("#FFFDD835");
-            case "low":
-            default:
-                return Color.parseColor("#FF9E9E9E");
+    private boolean isLatestNote(Note note) {
+        if (latestUpdateTime == Long.MIN_VALUE) {
+            return false;
         }
+        return note.getUpdateTime() == latestUpdateTime;
     }
 
     @Override
@@ -97,23 +175,23 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
     }
 
     public static class NoteViewHolder extends RecyclerView.ViewHolder {
-        CardView cvNote;
-        View vPriority;
         TextView tvTitle;
         TextView tvContent;
-        TextView tvCategory;
         TextView tvTime;
-        ImageView ivExpired;
+        TextView tvLatest;
+        ImageView ivEdit;
+        ImageView ivDelete;
+        CheckBox cbSelect;
 
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
-            cvNote = itemView.findViewById(R.id.cv_note);
-            vPriority = itemView.findViewById(R.id.v_priority);
             tvTitle = itemView.findViewById(R.id.tv_title);
             tvContent = itemView.findViewById(R.id.tv_content);
-            tvCategory = itemView.findViewById(R.id.tv_category);
             tvTime = itemView.findViewById(R.id.tv_time);
-            ivExpired = itemView.findViewById(R.id.iv_expired);
+            tvLatest = itemView.findViewById(R.id.tv_latest);
+            ivEdit = itemView.findViewById(R.id.iv_edit);
+            ivDelete = itemView.findViewById(R.id.iv_delete);
+            cbSelect = itemView.findViewById(R.id.cb_select);
         }
     }
 }

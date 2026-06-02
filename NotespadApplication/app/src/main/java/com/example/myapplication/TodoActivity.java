@@ -3,11 +3,10 @@ package com.example.myapplication;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
-import android.content.SharedPreferences;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -21,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.myapplication.adapter.TodoAdapter;
 import com.example.myapplication.database.NoteDatabase;
 import com.example.myapplication.entity.Todo;
+import com.example.myapplication.utils.NotificationHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -40,10 +40,10 @@ public class TodoActivity extends AppCompatActivity {
     private Button btnFilter;
     private Button btnTodoBack;
 
-    private List<Todo> todos = new ArrayList<>();
-    private int filterMode = 0; // 0: 全部, 1: 未完成, 2: 已完成
+    private final List<Todo> todos = new ArrayList<>();
+    private int filterMode = 0;
     private long currentDeadline = 0;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm", Locale.getDefault());
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm", Locale.getDefault());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +51,6 @@ public class TodoActivity extends AppCompatActivity {
         setContentView(R.layout.activity_todo);
 
         database = NoteDatabase.getInstance(this);
-
         initViews();
         setupRecyclerView();
         loadTodos();
@@ -69,8 +68,7 @@ public class TodoActivity extends AppCompatActivity {
         spinnerTag = findViewById(R.id.spinnerTag);
         btnAddTodo = findViewById(R.id.btnAddTodo);
 
-        ArrayAdapter<CharSequence> tagAdapter = ArrayAdapter.createFromResource(this,
-                R.array.tag_options, android.R.layout.simple_spinner_item);
+        ArrayAdapter<CharSequence> tagAdapter = ArrayAdapter.createFromResource(this, R.array.tag_options, android.R.layout.simple_spinner_item);
         tagAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerTag.setAdapter(tagAdapter);
 
@@ -79,10 +77,12 @@ public class TodoActivity extends AppCompatActivity {
 
         etTodoContent.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
 
             @Override
             public void afterTextChanged(Editable s) {
@@ -101,7 +101,9 @@ public class TodoActivity extends AppCompatActivity {
         todoAdapter.setOnTodoClickListener(new TodoAdapter.OnTodoClickListener() {
             @Override
             public void onTodoClick(Todo todo) {
-                showEditDialog(todo);
+                Intent intent = new Intent(TodoActivity.this, EditTodoActivity.class);
+                intent.putExtra("todo_id", todo.getId());
+                startActivity(intent);
             }
 
             @Override
@@ -132,7 +134,6 @@ public class TodoActivity extends AppCompatActivity {
             }
             todos.clear();
             todos.addAll(loadedTodos);
-
             runOnUiThread(() -> todoAdapter.setTodos(todos));
         }).start();
     }
@@ -148,13 +149,15 @@ public class TodoActivity extends AppCompatActivity {
         new Thread(() -> {
             Todo todo = new Todo(content, tag, currentDeadline);
             database.todoDao().insertTodo(todo);
+            NotificationHelper.notifyTodoSaved(TodoActivity.this, content);
+            NotificationHelper.notifyTodoReminderSet(TodoActivity.this, content, currentDeadline);
 
             runOnUiThread(() -> {
                 etTodoContent.setText("");
                 currentDeadline = 0;
                 btnDeadline.setText(R.string.set_deadline);
                 loadTodos();
-                Toast.makeText(this, R.string.todo_added, Toast.LENGTH_SHORT).show();
+                Toast.makeText(TodoActivity.this, R.string.todo_added, Toast.LENGTH_SHORT).show();
             });
         }).start();
     }
@@ -163,22 +166,17 @@ public class TodoActivity extends AppCompatActivity {
         new Thread(() -> {
             todo.setCompleted(completed);
             database.todoDao().updateTodo(todo);
-
             runOnUiThread(() -> {
                 loadTodos();
-                if (completed) {
-                    Toast.makeText(this, R.string.todo_completed, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, R.string.todo_uncompleted, Toast.LENGTH_SHORT).show();
-                }
+                Toast.makeText(TodoActivity.this, completed ? R.string.todo_completed : R.string.todo_uncompleted, Toast.LENGTH_SHORT).show();
             });
         }).start();
     }
 
     private void showFilterDialog() {
         String[] filters = {getString(R.string.filter_all), getString(R.string.filter_uncompleted), getString(R.string.filter_completed)};
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("筛选")
+        new AlertDialog.Builder(this)
+                .setTitle("筛选")
                 .setSingleChoiceItems(filters, filterMode, (dialog, which) -> {
                     filterMode = which;
                     btnFilter.setText(filters[which]);
@@ -201,7 +199,6 @@ public class TodoActivity extends AppCompatActivity {
                 calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
                 calendar.set(Calendar.MINUTE, minute);
                 currentDeadline = calendar.getTimeInMillis();
-
                 btnDeadline.setText(dateFormat.format(new Date(currentDeadline)));
             }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true);
             timePickerDialog.show();
@@ -209,47 +206,17 @@ public class TodoActivity extends AppCompatActivity {
         datePickerDialog.show();
     }
 
-    private void showEditDialog(Todo todo) {
-        EditText etContent = new EditText(this);
-        etContent.setText(todo.getContent());
-        etContent.setHint("请输入待办内容");
-        etContent.setPadding(48, 24, 48, 24);
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("编辑待办")
-                .setView(etContent)
-                .setPositiveButton("保存", (dialog1, which) -> {
-                    String newContent = etContent.getText().toString().trim();
-                    if (!newContent.isEmpty()) {
-                        new Thread(() -> {
-                            todo.setContent(newContent);
-                            todo.setUpdateTime(System.currentTimeMillis());
-                            database.todoDao().updateTodo(todo);
-                            runOnUiThread(() -> {
-                                loadTodos();
-                                Toast.makeText(this, R.string.todo_updated, Toast.LENGTH_SHORT).show();
-                            });
-                        }).start();
-                    }
-                })
-                .setNegativeButton("取消", null)
-                .create();
-        dialog.show();
-    }
-
     private void showDeleteDialog(Todo todo) {
         new AlertDialog.Builder(this)
                 .setTitle("删除待办")
                 .setMessage("确定要删除这个待办事项吗？")
-                .setPositiveButton("删除", (dialog, which) -> {
-                    new Thread(() -> {
-                        database.todoDao().deleteTodo(todo);
-                        runOnUiThread(() -> {
-                            loadTodos();
-                            Toast.makeText(this, R.string.todo_deleted, Toast.LENGTH_SHORT).show();
-                        });
-                    }).start();
-                })
+                .setPositiveButton("删除", (dialog, which) -> new Thread(() -> {
+                    database.todoDao().deleteTodo(todo);
+                    runOnUiThread(() -> {
+                        loadTodos();
+                        Toast.makeText(TodoActivity.this, R.string.todo_deleted, Toast.LENGTH_SHORT).show();
+                    });
+                }).start())
                 .setNegativeButton("取消", null)
                 .show();
     }

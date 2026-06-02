@@ -2,13 +2,14 @@ package com.example.myapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.TypedValue;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ImageButton;
-import androidx.appcompat.widget.SearchView;
-import android.widget.Spinner;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,32 +23,31 @@ import com.example.myapplication.database.NoteDatabase;
 import com.example.myapplication.entity.Note;
 import com.example.myapplication.entity.Todo;
 import com.example.myapplication.network.QuoteService;
-import com.example.myapplication.utils.ClipboardUtil;
+import com.example.myapplication.utils.MessageCenterRepository;
+import com.example.myapplication.utils.NotificationHelper;
 import com.example.myapplication.utils.TimeUtil;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.example.myapplication.utils.TodoRepeatHelper;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private RecyclerView rvNotes;
+    private RecyclerView rvTodos;
     private NoteAdapter noteAdapter;
+    private HorizontalTodoAdapter todoAdapter;
     private List<Note> allNotes = new ArrayList<>();
+    private List<Todo> allTodos = new ArrayList<>();
     private NoteDatabase noteDatabase;
     private QuoteService quoteService;
 
-    private String currentCategory = "all";
-    private String currentKeyword = "";
-    private boolean sortByPriority = false;
-
     private TextView tvQuote;
-    private TextView tvAuthor;
-    private TextView tvExpiredCount;
-    private HorizontalTodoAdapter todayTodoAdapter;
-    private RecyclerView rvTodayTodos;
-    private View llTodoHeader;
-    private Button btnViewAllTodos;
+    private TextView tvGreeting;
+    private EditText etSearch;
+    private ImageView ivMessageCenter;
+    private ImageView ivSettings;
+    private LinearLayout llQuote;
+    private View viewMessageBadge;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,268 +59,264 @@ public class MainActivity extends AppCompatActivity {
 
         initViews();
         loadNotes();
+        loadTodos();
         fetchQuote();
-        checkExpiredNotes();
-        checkCacheWarning();
+        updateGreeting();
     }
 
     private void initViews() {
         rvNotes = findViewById(R.id.rv_notes);
         rvNotes.setLayoutManager(new LinearLayoutManager(this));
 
+        rvTodos = findViewById(R.id.rv_todos);
+        rvTodos.setLayoutManager(new LinearLayoutManager(this));
+
         tvQuote = findViewById(R.id.tv_quote);
-        tvAuthor = findViewById(R.id.tv_author);
-        tvExpiredCount = findViewById(R.id.tv_expired_count);
+        tvGreeting = findViewById(R.id.tv_greeting);
+        etSearch = findViewById(R.id.et_search);
+        ivMessageCenter = findViewById(R.id.iv_message_center);
+        ivSettings = findViewById(R.id.iv_settings);
+        llQuote = findViewById(R.id.ll_quote);
+        viewMessageBadge = findViewById(R.id.view_message_badge);
 
-        llTodoHeader = findViewById(R.id.ll_todo_header);
-        rvTodayTodos = findViewById(R.id.rv_today_todos);
-        btnViewAllTodos = findViewById(R.id.btn_view_all_todos);
+        if (tvQuote != null) {
+            tvQuote.setHorizontallyScrolling(false);
+            tvQuote.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
+                    adjustQuoteContainerHeight());
+            adjustQuoteContainerHeight();
+        }
 
-        rvTodayTodos.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        todayTodoAdapter = new HorizontalTodoAdapter();
-        rvTodayTodos.setAdapter(todayTodoAdapter);
+        if (ivMessageCenter != null) {
+            ivMessageCenter.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, MessageCenterActivity.class)));
+        }
 
-        todayTodoAdapter.setOnTodoClickListener(new HorizontalTodoAdapter.OnTodoClickListener() {
+        if (ivSettings != null) {
+            ivSettings.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, SettingsActivity.class)));
+        }
+
+        etSearch.addTextChangedListener(new TextWatcher() {
             @Override
-            public void onTodoCompleteClick(Todo todo, boolean completed) {
-                completeTodo(todo, completed);
-            }
-        });
-
-        btnViewAllTodos.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, TodoActivity.class);
-            startActivity(intent);
-        });
-
-        FloatingActionButton fabAdd = findViewById(R.id.fab_add);
-        fabAdd.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, AddNoteActivity.class);
-            startActivity(intent);
-        });
-
-        ImageButton btnTodo = findViewById(R.id.btn_todo);
-        btnTodo.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, TodoActivity.class);
-            startActivity(intent);
-        });
-
-        ImageButton btnSettings = findViewById(R.id.btn_settings);
-        btnSettings.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-            startActivity(intent);
-        });
-
-        View llQuote = findViewById(R.id.ll_quote);
-        llQuote.setOnClickListener(v -> fetchQuote());
-        llQuote.setOnLongClickListener(v -> {
-            String quoteText = tvQuote.getText().toString() + " —— " + tvAuthor.getText().toString();
-            ClipboardUtil.copyToClipboard(MainActivity.this, quoteText);
-            Toast.makeText(MainActivity.this, R.string.copied_success, Toast.LENGTH_SHORT).show();
-            return true;
-        });
-
-        SearchView svSearch = findViewById(R.id.sv_search);
-        svSearch.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                currentKeyword = query;
-                filterNotes();
-                return false;
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
 
             @Override
-            public boolean onQueryTextChange(String newText) {
-                currentKeyword = newText;
-                filterNotes();
-                return false;
-            }
-        });
-
-        Spinner spCategory = findViewById(R.id.sp_category);
-        ArrayAdapter<CharSequence> categoryAdapter = ArrayAdapter.createFromResource(this,
-                R.array.categories, android.R.layout.simple_spinner_item);
-        categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spCategory.setAdapter(categoryAdapter);
-        spCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String[] categories = getResources().getStringArray(R.array.categories);
-                currentCategory = categories[position];
-                filterNotes();
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                search(s.toString());
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
+            public void afterTextChanged(Editable s) {
             }
         });
 
-        ImageButton btnExpired = findViewById(R.id.btn_expired);
-        btnExpired.setOnClickListener(v -> {
-            currentCategory = "expired";
-            filterNotes();
-        });
+        TextView tvSwitchQuote = findViewById(R.id.tv_switch_quote);
+        if (tvSwitchQuote != null) {
+            tvSwitchQuote.setOnClickListener(v -> fetchQuote());
+        }
 
-        ImageButton btnSort = findViewById(R.id.btn_sort);
-        btnSort.setOnClickListener(v -> {
-            sortByPriority = !sortByPriority;
-            loadNotes();
-            Toast.makeText(this, sortByPriority ? R.string.sort_priority : R.string.sort_time, Toast.LENGTH_SHORT).show();
-        });
+        Button btnAddNoteMain = findViewById(R.id.btn_add_note_main);
+        if (btnAddNoteMain != null) {
+            btnAddNoteMain.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, AddNoteActivity.class)));
+        }
 
-        loadTodayTodos();
+        Button btnClearNotes = findViewById(R.id.btn_clear_notes);
+        if (btnClearNotes != null) {
+            btnClearNotes.setOnClickListener(v -> clearAllNotes());
+        }
+
+        Button btnViewAllNotes = findViewById(R.id.btn_view_all_notes);
+        if (btnViewAllNotes != null) {
+            btnViewAllNotes.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, NoteListActivity.class)));
+        }
+
+        Button btnClearTodos = findViewById(R.id.btn_clear_todos);
+        if (btnClearTodos != null) {
+            btnClearTodos.setOnClickListener(v -> clearAllTodos());
+        }
+
+        Button btnViewAllTodos = findViewById(R.id.btn_view_all_todos);
+        if (btnViewAllTodos != null) {
+            btnViewAllTodos.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, TodoListActivity.class)));
+        }
+
+        Button btnAddTodo = findViewById(R.id.btn_add_todo);
+        if (btnAddTodo != null) {
+            btnAddTodo.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, EditTodoActivity.class)));
+        }
     }
 
-    private void loadTodayTodos() {
-        new Thread(() -> {
-            long currentTime = System.currentTimeMillis();
-            long endOfToday = getEndOfToday();
-
-            List<Todo> allTodos = noteDatabase.todoDao().getUncompletedTodos();
-            List<Todo> todayTodos = new ArrayList<>();
-
-            for (Todo todo : allTodos) {
-                if (todo.getDeadline() > 0) {
-                    if (todo.getDeadline() <= endOfToday && todo.getDeadline() >= getStartOfToday()) {
-                        todayTodos.add(todo);
-                    } else if (todo.getDeadline() < currentTime) {
-                        todayTodos.add(todo);
-                    }
-                }
-                if (todayTodos.size() >= 5) {
-                    break;
-                }
-            }
-
-            final boolean hasTodos = !todayTodos.isEmpty();
-            runOnUiThread(() -> {
-                if (hasTodos) {
-                    llTodoHeader.setVisibility(View.VISIBLE);
-                    rvTodayTodos.setVisibility(View.VISIBLE);
-                    todayTodoAdapter.setTodos(todayTodos);
-                } else {
-                    llTodoHeader.setVisibility(View.GONE);
-                    rvTodayTodos.setVisibility(View.GONE);
-                }
-            });
-        }).start();
-    }
-
-    private long getStartOfToday() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-        return calendar.getTimeInMillis();
-    }
-
-    private long getEndOfToday() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 23);
-        calendar.set(Calendar.MINUTE, 59);
-        calendar.set(Calendar.SECOND, 59);
-        calendar.set(Calendar.MILLISECOND, 999);
-        return calendar.getTimeInMillis();
-    }
-
-    private void completeTodo(Todo todo, boolean completed) {
-        new Thread(() -> {
-            todo.setCompleted(completed);
-            noteDatabase.todoDao().updateTodo(todo);
-
-            runOnUiThread(() -> {
-                loadTodayTodos();
-                if (completed) {
-                    Toast.makeText(this, R.string.todo_completed, Toast.LENGTH_SHORT).show();
-                }
-            });
-        }).start();
+    private void updateGreeting() {
+        if (tvGreeting == null) {
+            return;
+        }
+        int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+        tvGreeting.setText(hour < 12 ? "早上好" : hour < 18 ? "下午好" : "晚上好");
     }
 
     private void fetchQuote() {
+        if (tvQuote == null) {
+            return;
+        }
         quoteService.fetchQuote(new QuoteService.QuoteCallback() {
             @Override
             public void onSuccess(String quote, String author) {
-                runOnUiThread(() -> {
-                    tvQuote.setText(quote);
-                    tvAuthor.setText("—— " + author);
-                });
+                runOnUiThread(() -> updateQuoteText(quote));
             }
 
             @Override
             public void onError(String error) {
-                runOnUiThread(() -> {
-                    tvQuote.setText(R.string.daily_quote);
-                    tvAuthor.setText("");
-                });
+                runOnUiThread(() -> tvQuote.setText("慢慢来，会好的。"));
             }
         });
     }
 
+    private void updateQuoteText(String quote) {
+        if (tvQuote == null) {
+            return;
+        }
+        tvQuote.setText(quote);
+        adjustQuoteContainerHeight();
+    }
+
+    private void adjustQuoteContainerHeight() {
+        if (tvQuote == null || llQuote == null) {
+            return;
+        }
+
+        tvQuote.post(() -> {
+            int lineCount = Math.max(tvQuote.getLineCount(), 1);
+            int extraLines = Math.max(0, lineCount - 1);
+            int baseHeight = dpToPx(72);
+            int targetHeight = baseHeight + (extraLines * tvQuote.getLineHeight());
+
+            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) llQuote.getLayoutParams();
+            if (layoutParams.height != LinearLayout.LayoutParams.WRAP_CONTENT) {
+                layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+                llQuote.setLayoutParams(layoutParams);
+            }
+
+            if (llQuote.getMinimumHeight() != targetHeight) {
+                llQuote.setMinimumHeight(targetHeight);
+                llQuote.requestLayout();
+            }
+        });
+    }
+
+    private int dpToPx(int dp) {
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                dp,
+                getResources().getDisplayMetrics()
+        );
+    }
+
     private void loadNotes() {
         new Thread(() -> {
-            if (sortByPriority) {
+            try {
                 allNotes = noteDatabase.noteDao().getAllNotes();
-                allNotes.sort((n1, n2) -> {
-                    int p1 = getPriorityOrder(n1.getPriority());
-                    int p2 = getPriorityOrder(n2.getPriority());
-                    return Integer.compare(p2, p1);
-                });
-            } else {
-                allNotes = noteDatabase.noteDao().getAllNotes();
+            } catch (Exception e) {
+                allNotes = new ArrayList<>();
             }
-            runOnUiThread(this::filterNotes);
+            runOnUiThread(() -> updateNoteRecyclerView(allNotes));
         }).start();
     }
 
-    private int getPriorityOrder(String priority) {
-        switch (priority) {
-            case "high":
-                return 3;
-            case "medium":
-                return 2;
-            default:
-                return 1;
-        }
+    private void loadTodos() {
+        new Thread(() -> {
+            try {
+                allTodos = noteDatabase.todoDao().getAllTodos();
+            } catch (Exception e) {
+                allTodos = new ArrayList<>();
+            }
+            runOnUiThread(() -> updateTodoRecyclerView(allTodos));
+        }).start();
     }
 
-    private void filterNotes() {
-        List<Note> filteredNotes = new ArrayList<>();
-
-        for (Note note : allNotes) {
-            boolean matchCategory = true;
-            boolean matchKeyword = true;
-            boolean matchExpired = false;
-
-            if ("expired".equals(currentCategory)) {
-                matchExpired = TimeUtil.isExpired(note.getReminderTime());
-            } else if (!"all".equals(currentCategory)) {
-                matchCategory = currentCategory.equals(note.getCategory());
-            }
-
-            if (!currentKeyword.isEmpty()) {
-                matchKeyword = (note.getTitle() != null && note.getTitle().toLowerCase().contains(currentKeyword.toLowerCase())) ||
-                        (note.getContent() != null && note.getContent().toLowerCase().contains(currentKeyword.toLowerCase()));
-            }
-
-            if (matchCategory && matchKeyword && (!"expired".equals(currentCategory) || matchExpired)) {
-                filteredNotes.add(note);
-            }
+    private void updateNoteRecyclerView(List<Note> notes) {
+        if (rvNotes == null) {
+            return;
+        }
+        if (notes == null) {
+            notes = new ArrayList<>();
         }
 
-        updateRecyclerView(filteredNotes);
-    }
-
-    private void updateRecyclerView(List<Note> notes) {
+        long latestTime = calculateLatestTime(allNotes);
         if (noteAdapter == null) {
             noteAdapter = new NoteAdapter(notes, this::onNoteClick, this::onNoteLongClick);
+            noteAdapter.setLatestUpdateTime(latestTime);
             rvNotes.setAdapter(noteAdapter);
         } else {
             noteAdapter.updateNotes(notes);
+            noteAdapter.setLatestUpdateTime(latestTime);
         }
 
-        findViewById(R.id.tv_empty).setVisibility(notes.isEmpty() ? View.VISIBLE : View.GONE);
-        rvNotes.setVisibility(notes.isEmpty() ? View.GONE : View.VISIBLE);
+        View tvEmpty = findViewById(R.id.tv_empty);
+        if (tvEmpty != null) {
+            tvEmpty.setVisibility(notes.isEmpty() ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void updateTodoRecyclerView(List<Todo> todos) {
+        if (rvTodos == null) {
+            return;
+        }
+        if (todos == null) {
+            todos = new ArrayList<>();
+        }
+
+        if (todoAdapter == null) {
+            todoAdapter = new HorizontalTodoAdapter();
+            todoAdapter.setOnTodoClickListener(new HorizontalTodoAdapter.OnTodoClickListener() {
+                @Override
+                public void onTodoClick(Todo todo) {
+                    Intent intent = new Intent(MainActivity.this, EditTodoActivity.class);
+                    intent.putExtra("todo_id", todo.getId());
+                    startActivity(intent);
+                }
+
+                @Override
+                public void onTodoCompleteClick(Todo todo, boolean completed) {
+                    toggleTodoComplete(todo, completed);
+                }
+            });
+            rvTodos.setAdapter(todoAdapter);
+        }
+        todoAdapter.setTodos(todos);
+    }
+
+    private void toggleTodoComplete(Todo todo, boolean completed) {
+        new Thread(() -> {
+            if (completed && TodoRepeatHelper.isRepeating(todo)) {
+                TodoRepeatHelper.moveToNextOccurrence(todo);
+                noteDatabase.todoDao().updateTodo(todo);
+                NotificationHelper.notifyTodoReminderSet(MainActivity.this, todo.getContent(), todo.getDeadline());
+                runOnUiThread(() -> {
+                    loadTodos();
+                    Toast.makeText(MainActivity.this, "重复待办已顺延至 " + TimeUtil.formatDateTime(todo.getDeadline()), Toast.LENGTH_SHORT).show();
+                });
+                return;
+            }
+
+            todo.setCompleted(completed);
+            noteDatabase.todoDao().updateTodo(todo);
+            runOnUiThread(() -> {
+                loadTodos();
+                Toast.makeText(MainActivity.this, completed ? "已完成" : "已取消完成", Toast.LENGTH_SHORT).show();
+            });
+        }).start();
+    }
+
+    private long calculateLatestTime(List<Note> notes) {
+        if (notes == null || notes.isEmpty()) {
+            return Long.MIN_VALUE;
+        }
+        long latestTime = Long.MIN_VALUE;
+        for (Note note : notes) {
+            if (note.getUpdateTime() > latestTime) {
+                latestTime = note.getUpdateTime();
+            }
+        }
+        return latestTime;
     }
 
     private void onNoteClick(Note note) {
@@ -331,11 +327,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void onNoteLongClick(Note note) {
         new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setMessage(R.string.confirm_delete)
-                .setPositiveButton(R.string.action_delete, (dialog, which) -> {
-                    deleteNote(note);
-                })
-                .setNegativeButton(R.string.cancel, null)
+                .setMessage("确定删除这条笔记吗？")
+                .setPositiveButton("删除", (dialog, which) -> deleteNote(note))
+                .setNegativeButton("取消", null)
                 .show();
     }
 
@@ -343,59 +337,84 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             noteDatabase.noteDao().deleteNote(note);
             runOnUiThread(() -> {
-                Toast.makeText(this, R.string.deleted_success, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "删除成功", Toast.LENGTH_SHORT).show();
                 loadNotes();
             });
         }).start();
     }
 
-    private void checkExpiredNotes() {
-        new Thread(() -> {
-            long currentTime = System.currentTimeMillis();
-            List<Note> expiredNotes = noteDatabase.noteDao().getExpiredNotes(currentTime);
-            runOnUiThread(() -> {
-                if (!expiredNotes.isEmpty()) {
-                    tvExpiredCount.setText(String.valueOf(expiredNotes.size()));
-                    tvExpiredCount.setVisibility(View.VISIBLE);
-                } else {
-                    tvExpiredCount.setVisibility(View.GONE);
-                }
-            });
-        }).start();
+    private void clearAllNotes() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setMessage("确定要清空所有笔记吗？此操作不可恢复。")
+                .setPositiveButton("确定", (dialog, which) -> new Thread(() -> {
+                    noteDatabase.noteDao().deleteAllNotes();
+                    runOnUiThread(() -> {
+                        Toast.makeText(MainActivity.this, "已清空", Toast.LENGTH_SHORT).show();
+                        loadNotes();
+                    });
+                }).start())
+                .setNegativeButton("取消", null)
+                .show();
     }
 
-    private void checkCacheWarning() {
-        new Thread(() -> {
-            int count = noteDatabase.noteDao().getNoteCount();
-            if (count > 20) {
-                runOnUiThread(() -> {
-                    new androidx.appcompat.app.AlertDialog.Builder(MainActivity.this)
-                            .setMessage(R.string.cache_warning)
-                            .setPositiveButton(R.string.cache_clear, (dialog, which) -> {
-                                clearCache();
-                            })
-                            .setNegativeButton(R.string.cancel, null)
-                            .show();
-                });
+    private void clearAllTodos() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setMessage("确定要清空所有待办吗？此操作不可恢复。")
+                .setPositiveButton("确定", (dialog, which) -> new Thread(() -> {
+                    noteDatabase.todoDao().deleteAllTodos();
+                    runOnUiThread(() -> {
+                        Toast.makeText(MainActivity.this, "已清空", Toast.LENGTH_SHORT).show();
+                        loadTodos();
+                    });
+                }).start())
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void search(String keyword) {
+        if (keyword.isEmpty()) {
+            updateNoteRecyclerView(allNotes);
+            updateTodoRecyclerView(allTodos);
+            return;
+        }
+
+        List<Note> filteredNotes = new ArrayList<>();
+        for (Note note : allNotes) {
+            String title = note.getTitle() != null ? note.getTitle() : "";
+            String content = note.getContent() != null ? note.getContent() : "";
+            if (title.toLowerCase().contains(keyword.toLowerCase()) || content.toLowerCase().contains(keyword.toLowerCase())) {
+                filteredNotes.add(note);
             }
-        }).start();
-    }
+        }
 
-    private void clearCache() {
-        new Thread(() -> {
-            noteDatabase.noteDao().deleteAllNotes();
-            runOnUiThread(() -> {
-                Toast.makeText(this, R.string.cache_cleared, Toast.LENGTH_SHORT).show();
-                loadNotes();
-            });
-        }).start();
+        List<Todo> filteredTodos = new ArrayList<>();
+        for (Todo todo : allTodos) {
+            String content = todo.getContent() != null ? todo.getContent() : "";
+            if (content.toLowerCase().contains(keyword.toLowerCase())) {
+                filteredTodos.add(todo);
+            }
+        }
+
+        updateNoteRecyclerView(filteredNotes);
+        updateTodoRecyclerView(filteredTodos);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         loadNotes();
-        checkExpiredNotes();
-        loadTodayTodos();
+        loadTodos();
+        updateMessageBadge();
+        checkExpiredNotifications();
+    }
+
+    private void updateMessageBadge() {
+        if (viewMessageBadge != null) {
+            viewMessageBadge.setVisibility(MessageCenterRepository.getUnreadCount(this) > 0 ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void checkExpiredNotifications() {
+        new Thread(() -> NotificationHelper.notifyExpiredItemsIfNeeded(MainActivity.this)).start();
     }
 }

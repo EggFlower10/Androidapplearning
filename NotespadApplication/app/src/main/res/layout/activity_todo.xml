@@ -57,7 +57,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="@color/white"
+        android:background="@color/card_background"
         android:padding="12dp"
         android:elevation="4dp"
         android:gravity="center_vertical">

@@ -13,18 +13,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.myapplication.R;
 import com.example.myapplication.entity.Todo;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 public class HorizontalTodoAdapter extends RecyclerView.Adapter<HorizontalTodoAdapter.TodoViewHolder> {
     private List<Todo> todos = new ArrayList<>();
     private OnTodoClickListener onTodoClickListener;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
 
     public interface OnTodoClickListener {
+        void onTodoClick(Todo todo);
         void onTodoCompleteClick(Todo todo, boolean completed);
     }
 
@@ -60,14 +57,19 @@ public class HorizontalTodoAdapter extends RecyclerView.Adapter<HorizontalTodoAd
         private CheckBox checkBox;
         private TextView tvContent;
         private TextView tvTag;
-        private TextView tvDeadline;
 
         public TodoViewHolder(@NonNull View itemView) {
             super(itemView);
             checkBox = itemView.findViewById(R.id.checkBoxTodo);
             tvContent = itemView.findViewById(R.id.tvTodoContent);
             tvTag = itemView.findViewById(R.id.tvTodoTag);
-            tvDeadline = itemView.findViewById(R.id.tvTodoDeadline);
+
+            itemView.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && onTodoClickListener != null) {
+                    onTodoClickListener.onTodoClick(todos.get(position));
+                }
+            });
         }
 
         public void bind(Todo todo) {
@@ -78,22 +80,23 @@ public class HorizontalTodoAdapter extends RecyclerView.Adapter<HorizontalTodoAd
             if (todo.isCompleted()) {
                 tvContent.setTextColor(tvContent.getContext().getResources().getColor(R.color.text_strikethrough));
                 tvContent.setPaintFlags(tvContent.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                tvTag.setText("已完成");
+                tvTag.setBackgroundResource(R.drawable.tag_grey_bg);
+                tvTag.setTextColor(tvTag.getContext().getResources().getColor(R.color.tag_grey));
             } else {
                 tvContent.setTextColor(tvContent.getContext().getResources().getColor(R.color.text_primary));
                 tvContent.setPaintFlags(tvContent.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-            }
-
-            String tag = todo.getTag();
-            if (tag == null || tag.isEmpty()) {
-                tag = "默认";
-            }
-            tvTag.setText(tag);
-
-            if (todo.getDeadline() > 0) {
-                String deadline = dateFormat.format(new Date(todo.getDeadline()));
-                tvDeadline.setText("截止 " + deadline);
-            } else {
-                tvDeadline.setText("无截止时间");
+                
+                String priority = todo.getPriority();
+                if ("high".equals(priority)) {
+                    tvTag.setText("重要");
+                    tvTag.setBackgroundResource(R.drawable.tag_pink_bg);
+                    tvTag.setTextColor(tvTag.getContext().getResources().getColor(R.color.tag_pink_text));
+                } else {
+                    tvTag.setText("进行中");
+                    tvTag.setBackgroundResource(R.drawable.tag_grey_bg);
+                    tvTag.setTextColor(tvTag.getContext().getResources().getColor(R.color.tag_grey));
+                }
             }
 
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {

@@ -11,11 +11,12 @@ import com.example.myapplication.dao.TodoDao;
 import com.example.myapplication.entity.Note;
 import com.example.myapplication.entity.Todo;
 
-@Database(entities = {Note.class, Todo.class}, version = 2, exportSchema = false)
+@Database(entities = {Note.class, Todo.class}, version = 5, exportSchema = false)
 public abstract class NoteDatabase extends RoomDatabase {
     private static volatile NoteDatabase INSTANCE;
 
     public abstract NoteDao noteDao();
+
     public abstract TodoDao todoDao();
 
     public static NoteDatabase getInstance(Context context) {
@@ -23,7 +24,7 @@ public abstract class NoteDatabase extends RoomDatabase {
             synchronized (NoteDatabase.class) {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
-                            NoteDatabase.class, "notes_database")
+                                    NoteDatabase.class, "notes_database")
                             .fallbackToDestructiveMigration()
                             .build();
                 }

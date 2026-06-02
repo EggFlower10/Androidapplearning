@@ -14,11 +14,15 @@ public class Todo {
     private boolean completed;
     private long createTime;
     private long updateTime;
+    private String priority;
+    private String repeatType;
 
     public Todo() {
         this.createTime = System.currentTimeMillis();
         this.updateTime = System.currentTimeMillis();
         this.completed = false;
+        this.priority = "low";
+        this.repeatType = "none";
     }
 
     @Ignore
@@ -84,5 +88,21 @@ public class Todo {
 
     public void setUpdateTime(long updateTime) {
         this.updateTime = updateTime;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public String getRepeatType() {
+        return repeatType;
+    }
+
+    public void setRepeatType(String repeatType) {
+        this.repeatType = repeatType;
     }
 }

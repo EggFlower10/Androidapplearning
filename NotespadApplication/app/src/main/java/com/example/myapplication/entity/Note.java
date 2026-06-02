@@ -14,10 +14,12 @@ public class Note {
     private long reminderTime;
     private long createTime;
     private long updateTime;
+    private int sortOrder;
 
     public Note() {
         this.createTime = System.currentTimeMillis();
         this.updateTime = System.currentTimeMillis();
+        this.sortOrder = 0;
     }
 
     public long getId() {
@@ -82,5 +84,13 @@ public class Note {
 
     public void setUpdateTime(long updateTime) {
         this.updateTime = updateTime;
+    }
+
+    public int getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(int sortOrder) {
+        this.sortOrder = sortOrder;
     }
 }
