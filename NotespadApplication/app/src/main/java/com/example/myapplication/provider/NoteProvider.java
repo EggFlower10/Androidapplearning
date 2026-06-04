@@ -14,6 +14,8 @@ import androidx.annotation.Nullable;
 
 import com.example.myapplication.database.NoteDatabase;
 import com.example.myapplication.entity.Note;
+import com.example.myapplication.utils.ExpiredReminderScheduler;
+import com.example.myapplication.utils.MessageCenterRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -142,9 +144,17 @@ public class NoteProvider extends ContentProvider {
             case NOTE_ID:
                 long deleteId = ContentUris.parseId(uri);
                 deleted = noteDatabase.noteDao().deleteNoteById(deleteId);
+                if (deleted > 0 && getContext() != null) {
+                    MessageCenterRepository.deleteNoteMessages(getContext(), deleteId);
+                    ExpiredReminderScheduler.scheduleNextCheck(getContext());
+                }
                 break;
             case NOTES:
                 noteDatabase.noteDao().deleteAllNotes();
+                if (getContext() != null) {
+                    MessageCenterRepository.deleteAllNoteMessages(getContext());
+                    ExpiredReminderScheduler.scheduleNextCheck(getContext());
+                }
                 deleted = 1;
                 break;
             default:

@@ -16,6 +16,7 @@ public class Todo {
     private long updateTime;
     private String priority;
     private String repeatType;
+    private boolean hasSentExpiredReminder;
 
     public Todo() {
         this.createTime = System.currentTimeMillis();
@@ -23,6 +24,7 @@ public class Todo {
         this.completed = false;
         this.priority = "low";
         this.repeatType = "none";
+        this.hasSentExpiredReminder = false;
     }
 
     @Ignore
@@ -104,5 +106,13 @@ public class Todo {
 
     public void setRepeatType(String repeatType) {
         this.repeatType = repeatType;
+    }
+
+    public boolean isHasSentExpiredReminder() {
+        return hasSentExpiredReminder;
+    }
+
+    public void setHasSentExpiredReminder(boolean hasSentExpiredReminder) {
+        this.hasSentExpiredReminder = hasSentExpiredReminder;
     }
 }

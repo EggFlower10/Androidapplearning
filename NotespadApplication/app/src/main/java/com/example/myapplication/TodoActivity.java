@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.myapplication.adapter.TodoAdapter;
 import com.example.myapplication.database.NoteDatabase;
 import com.example.myapplication.entity.Todo;
+import com.example.myapplication.utils.ExpiredReminderScheduler;
 import com.example.myapplication.utils.NotificationHelper;
 
 import java.text.SimpleDateFormat;
@@ -148,9 +149,11 @@ public class TodoActivity extends AppCompatActivity {
 
         new Thread(() -> {
             Todo todo = new Todo(content, tag, currentDeadline);
-            database.todoDao().insertTodo(todo);
-            NotificationHelper.notifyTodoSaved(TodoActivity.this, content);
-            NotificationHelper.notifyTodoReminderSet(TodoActivity.this, content, currentDeadline);
+            long todoId = database.todoDao().insertTodo(todo);
+            todo.setId(todoId);
+            NotificationHelper.notifyTodoSaved(TodoActivity.this, todoId, content);
+            NotificationHelper.notifyTodoReminderSet(TodoActivity.this, todoId, content, currentDeadline);
+            ExpiredReminderScheduler.scheduleNextCheck(TodoActivity.this);
 
             runOnUiThread(() -> {
                 etTodoContent.setText("");
@@ -165,7 +168,11 @@ public class TodoActivity extends AppCompatActivity {
     private void toggleTodoComplete(Todo todo, boolean completed) {
         new Thread(() -> {
             todo.setCompleted(completed);
+            if (!completed) {
+                todo.setHasSentExpiredReminder(false);
+            }
             database.todoDao().updateTodo(todo);
+            ExpiredReminderScheduler.scheduleNextCheck(TodoActivity.this);
             runOnUiThread(() -> {
                 loadTodos();
                 Toast.makeText(TodoActivity.this, completed ? R.string.todo_completed : R.string.todo_uncompleted, Toast.LENGTH_SHORT).show();
@@ -212,6 +219,7 @@ public class TodoActivity extends AppCompatActivity {
                 .setMessage("确定要删除这个待办事项吗？")
                 .setPositiveButton("删除", (dialog, which) -> new Thread(() -> {
                     database.todoDao().deleteTodo(todo);
+                    ExpiredReminderScheduler.scheduleNextCheck(TodoActivity.this);
                     runOnUiThread(() -> {
                         loadTodos();
                         Toast.makeText(TodoActivity.this, R.string.todo_deleted, Toast.LENGTH_SHORT).show();

@@ -20,6 +20,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.myapplication.database.NoteDatabase;
 import com.example.myapplication.entity.Note;
+import com.example.myapplication.utils.ExpiredReminderScheduler;
+import com.example.myapplication.utils.MessageCenterRepository;
 import com.example.myapplication.utils.NotificationHelper;
 
 public class AddNoteActivity extends AppCompatActivity {
@@ -197,6 +199,8 @@ public class AddNoteActivity extends AppCompatActivity {
         new Thread(() -> {
             if (currentNote != null) {
                 noteDatabase.noteDao().deleteNote(currentNote);
+                MessageCenterRepository.deleteNoteMessages(this, currentNote.getId());
+                ExpiredReminderScheduler.scheduleNextCheck(this);
             }
             runOnUiThread(() -> {
                 Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
@@ -233,6 +237,7 @@ public class AddNoteActivity extends AppCompatActivity {
         }
 
         new Thread(() -> {
+            long noteId;
             if (currentNote == null) {
                 Note note = new Note();
                 note.setTitle(title);
@@ -240,17 +245,23 @@ public class AddNoteActivity extends AppCompatActivity {
                 note.setCategory("工作");
                 note.setPriority("low");
                 note.setReminderTime(0);
+                note.setHasSentExpiredReminder(false);
                 note.setCreateTime(System.currentTimeMillis());
                 note.setUpdateTime(System.currentTimeMillis());
-                noteDatabase.noteDao().insertNote(note);
+                noteId = noteDatabase.noteDao().insertNote(note);
+                note.setId(noteId);
+                currentNote = note;
             } else {
                 currentNote.setTitle(title);
                 currentNote.setContent(content);
                 currentNote.setUpdateTime(System.currentTimeMillis());
+                currentNote.setHasSentExpiredReminder(false);
                 noteDatabase.noteDao().updateNote(currentNote);
+                noteId = currentNote.getId();
             }
 
-            NotificationHelper.notifyNoteSaved(AddNoteActivity.this, title);
+            NotificationHelper.notifyNoteSaved(AddNoteActivity.this, noteId, title);
+            ExpiredReminderScheduler.scheduleNextCheck(AddNoteActivity.this);
 
             runOnUiThread(() -> {
                 Toast.makeText(AddNoteActivity.this, "保存成功", Toast.LENGTH_SHORT).show();

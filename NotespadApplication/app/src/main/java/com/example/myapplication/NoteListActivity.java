@@ -19,6 +19,8 @@ import android.widget.Toast;
 import com.example.myapplication.adapter.NoteAdapter;
 import com.example.myapplication.database.NoteDatabase;
 import com.example.myapplication.entity.Note;
+import com.example.myapplication.utils.ExpiredReminderScheduler;
+import com.example.myapplication.utils.MessageCenterRepository;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -189,7 +191,9 @@ public class NoteListActivity extends AppCompatActivity {
                     new Thread(() -> {
                         for (Note note : selectedNotes) {
                             noteDatabase.noteDao().deleteNote(note);
+                            MessageCenterRepository.deleteNoteMessages(this, note.getId());
                         }
+                        ExpiredReminderScheduler.scheduleNextCheck(NoteListActivity.this);
                         runOnUiThread(() -> {
                             loadNotes();
                             exitSelectMode();
@@ -340,6 +344,8 @@ public class NoteListActivity extends AppCompatActivity {
     private void deleteNote(Note note) {
         new Thread(() -> {
             noteDatabase.noteDao().deleteNote(note);
+            MessageCenterRepository.deleteNoteMessages(this, note.getId());
+            ExpiredReminderScheduler.scheduleNextCheck(NoteListActivity.this);
             runOnUiThread(() -> {
                 loadNotes();
             });

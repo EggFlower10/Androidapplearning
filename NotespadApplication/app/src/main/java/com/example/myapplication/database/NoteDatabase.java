@@ -6,18 +6,22 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
+import com.example.myapplication.dao.MessageDao;
 import com.example.myapplication.dao.NoteDao;
 import com.example.myapplication.dao.TodoDao;
+import com.example.myapplication.entity.Message;
 import com.example.myapplication.entity.Note;
 import com.example.myapplication.entity.Todo;
 
-@Database(entities = {Note.class, Todo.class}, version = 5, exportSchema = false)
+@Database(entities = {Note.class, Todo.class, Message.class}, version = 8, exportSchema = false)
 public abstract class NoteDatabase extends RoomDatabase {
     private static volatile NoteDatabase INSTANCE;
 
     public abstract NoteDao noteDao();
 
     public abstract TodoDao todoDao();
+
+    public abstract MessageDao messageDao();
 
     public static NoteDatabase getInstance(Context context) {
         if (INSTANCE == null) {

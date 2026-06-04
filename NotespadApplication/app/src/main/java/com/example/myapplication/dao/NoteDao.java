@@ -34,11 +34,17 @@ public interface NoteDao {
     @Query("SELECT * FROM notes ORDER BY updateTime ASC")
     List<Note> getAllNotesByCreateTimeAsc();
 
-    @Query("SELECT * FROM notes WHERE reminderTime > 0 AND reminderTime < :currentTime ORDER BY reminderTime ASC")
+    @Query("SELECT * FROM notes WHERE reminderTime > 0 AND reminderTime < :currentTime AND hasSentExpiredReminder = 0 ORDER BY reminderTime ASC")
     List<Note> getExpiredNotes(long currentTime);
 
-    @Query("SELECT * FROM notes WHERE reminderTime > :currentTime ORDER BY reminderTime ASC")
+    @Query("SELECT * FROM notes WHERE reminderTime > :currentTime AND hasSentExpiredReminder = 0 ORDER BY reminderTime ASC")
     List<Note> getUpcomingNotes(long currentTime);
+
+    @Query("SELECT * FROM notes WHERE reminderTime > 0 AND reminderTime < :currentTime AND hasSentExpiredReminder = 0 ORDER BY reminderTime ASC LIMIT 1")
+    Note getFirstExpiredNote(long currentTime);
+
+    @Query("SELECT * FROM notes WHERE reminderTime > :currentTime AND hasSentExpiredReminder = 0 ORDER BY reminderTime ASC LIMIT 1")
+    Note getNextPendingReminder(long currentTime);
 
     @Query("SELECT COUNT(*) FROM notes")
     int getNoteCount();

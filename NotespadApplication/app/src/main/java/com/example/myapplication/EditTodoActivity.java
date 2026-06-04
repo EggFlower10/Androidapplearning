@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.myapplication.database.NoteDatabase;
 import com.example.myapplication.entity.Todo;
+import com.example.myapplication.utils.ExpiredReminderScheduler;
 import com.example.myapplication.utils.NotificationHelper;
 
 import java.text.SimpleDateFormat;
@@ -276,16 +277,19 @@ public class EditTodoActivity extends AppCompatActivity {
             currentTodo.setPriority(priority);
             currentTodo.setCompleted(completed);
             currentTodo.setRepeatType(repeatType);
+            currentTodo.setHasSentExpiredReminder(false);
             currentTodo.setUpdateTime(System.currentTimeMillis());
 
             if (currentTodo.getId() == 0) {
-                database.todoDao().insertTodo(currentTodo);
+                long todoId = database.todoDao().insertTodo(currentTodo);
+                currentTodo.setId(todoId);
             } else {
                 database.todoDao().updateTodo(currentTodo);
             }
 
-            NotificationHelper.notifyTodoSaved(EditTodoActivity.this, content);
-            NotificationHelper.notifyTodoReminderSet(EditTodoActivity.this, content, deadlineTime);
+            NotificationHelper.notifyTodoSaved(EditTodoActivity.this, currentTodo.getId(), content);
+            NotificationHelper.notifyTodoReminderSet(EditTodoActivity.this, currentTodo.getId(), content, deadlineTime);
+            ExpiredReminderScheduler.scheduleNextCheck(EditTodoActivity.this);
 
             runOnUiThread(() -> {
                 Toast.makeText(EditTodoActivity.this, "保存成功", Toast.LENGTH_SHORT).show();
@@ -310,6 +314,7 @@ public class EditTodoActivity extends AppCompatActivity {
     private void deleteTodo() {
         new Thread(() -> {
             database.todoDao().deleteTodo(currentTodo);
+            ExpiredReminderScheduler.scheduleNextCheck(EditTodoActivity.this);
             runOnUiThread(() -> {
                 Toast.makeText(EditTodoActivity.this, "已删除", Toast.LENGTH_SHORT).show();
                 finish();

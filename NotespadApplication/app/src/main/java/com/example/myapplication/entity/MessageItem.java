@@ -1,15 +1,17 @@
 package com.example.myapplication.entity;
 
 public class MessageItem {
-    private final int id;
+    private final long id;
     private final String title;
     private final String summary;
     private final String time;
     private final String category;
     private final boolean unread;
     private final boolean highlighted;
+    private final String relatedType;
+    private final long relatedId;
 
-    public MessageItem(int id, String title, String summary, String time, String category, boolean unread, boolean highlighted) {
+    public MessageItem(long id, String title, String summary, String time, String category, boolean unread, boolean highlighted, String relatedType, long relatedId) {
         this.id = id;
         this.title = title;
         this.summary = summary;
@@ -17,9 +19,11 @@ public class MessageItem {
         this.category = category;
         this.unread = unread;
         this.highlighted = highlighted;
+        this.relatedType = relatedType;
+        this.relatedId = relatedId;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
@@ -45,5 +49,13 @@ public class MessageItem {
 
     public boolean isHighlighted() {
         return highlighted;
+    }
+
+    public String getRelatedType() {
+        return relatedType;
+    }
+
+    public long getRelatedId() {
+        return relatedId;
     }
 }

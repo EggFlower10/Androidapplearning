@@ -21,8 +21,14 @@ public interface TodoDao {
     @Query("SELECT * FROM todos WHERE completed = 1 ORDER BY updateTime DESC")
     List<Todo> getCompletedTodos();
 
-    @Query("SELECT * FROM todos WHERE deadline > 0 AND deadline < :currentTime AND completed = 0 ORDER BY deadline ASC")
+    @Query("SELECT * FROM todos WHERE deadline > 0 AND deadline < :currentTime AND completed = 0 AND hasSentExpiredReminder = 0 ORDER BY deadline ASC")
     List<Todo> getOverdueTodos(long currentTime);
+
+    @Query("SELECT * FROM todos WHERE deadline > 0 AND deadline < :currentTime AND completed = 0 AND hasSentExpiredReminder = 0 ORDER BY deadline ASC LIMIT 1")
+    Todo getFirstOverdueTodo(long currentTime);
+
+    @Query("SELECT * FROM todos WHERE deadline > :currentTime AND completed = 0 AND hasSentExpiredReminder = 0 ORDER BY deadline ASC LIMIT 1")
+    Todo getNextPendingDeadline(long currentTime);
 
     @Insert
     long insertTodo(Todo todo);

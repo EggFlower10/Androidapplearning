@@ -1,6 +1,8 @@
 package com.example.myapplication;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -14,6 +16,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -23,6 +27,7 @@ import com.example.myapplication.database.NoteDatabase;
 import com.example.myapplication.entity.Note;
 import com.example.myapplication.entity.Todo;
 import com.example.myapplication.network.QuoteService;
+import com.example.myapplication.utils.ExpiredReminderScheduler;
 import com.example.myapplication.utils.MessageCenterRepository;
 import com.example.myapplication.utils.NotificationHelper;
 import com.example.myapplication.utils.TimeUtil;
@@ -32,6 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    private static final int REQUEST_CODE_POST_NOTIFICATIONS = 2001;
+
     private RecyclerView rvNotes;
     private RecyclerView rvTodos;
     private NoteAdapter noteAdapter;
@@ -62,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         loadTodos();
         fetchQuote();
         updateGreeting();
+        requestNotificationPermissionIfNeeded();
     }
 
     private void initViews() {
@@ -288,8 +296,10 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             if (completed && TodoRepeatHelper.isRepeating(todo)) {
                 TodoRepeatHelper.moveToNextOccurrence(todo);
+                todo.setHasSentExpiredReminder(false);
                 noteDatabase.todoDao().updateTodo(todo);
-                NotificationHelper.notifyTodoReminderSet(MainActivity.this, todo.getContent(), todo.getDeadline());
+                NotificationHelper.notifyTodoReminderSet(MainActivity.this, todo.getId(), todo.getContent(), todo.getDeadline());
+                ExpiredReminderScheduler.scheduleNextCheck(MainActivity.this);
                 runOnUiThread(() -> {
                     loadTodos();
                     Toast.makeText(MainActivity.this, "重复待办已顺延至 " + TimeUtil.formatDateTime(todo.getDeadline()), Toast.LENGTH_SHORT).show();
@@ -298,7 +308,11 @@ public class MainActivity extends AppCompatActivity {
             }
 
             todo.setCompleted(completed);
+            if (!completed) {
+                todo.setHasSentExpiredReminder(false);
+            }
             noteDatabase.todoDao().updateTodo(todo);
+            ExpiredReminderScheduler.scheduleNextCheck(MainActivity.this);
             runOnUiThread(() -> {
                 loadTodos();
                 Toast.makeText(MainActivity.this, completed ? "已完成" : "已取消完成", Toast.LENGTH_SHORT).show();
@@ -336,6 +350,8 @@ public class MainActivity extends AppCompatActivity {
     private void deleteNote(Note note) {
         new Thread(() -> {
             noteDatabase.noteDao().deleteNote(note);
+            MessageCenterRepository.deleteNoteMessages(this, note.getId());
+            ExpiredReminderScheduler.scheduleNextCheck(this);
             runOnUiThread(() -> {
                 Toast.makeText(MainActivity.this, "删除成功", Toast.LENGTH_SHORT).show();
                 loadNotes();
@@ -348,6 +364,8 @@ public class MainActivity extends AppCompatActivity {
                 .setMessage("确定要清空所有笔记吗？此操作不可恢复。")
                 .setPositiveButton("确定", (dialog, which) -> new Thread(() -> {
                     noteDatabase.noteDao().deleteAllNotes();
+                    MessageCenterRepository.deleteAllNoteMessages(this);
+                    ExpiredReminderScheduler.scheduleNextCheck(this);
                     runOnUiThread(() -> {
                         Toast.makeText(MainActivity.this, "已清空", Toast.LENGTH_SHORT).show();
                         loadNotes();
@@ -362,6 +380,7 @@ public class MainActivity extends AppCompatActivity {
                 .setMessage("确定要清空所有待办吗？此操作不可恢复。")
                 .setPositiveButton("确定", (dialog, which) -> new Thread(() -> {
                     noteDatabase.todoDao().deleteAllTodos();
+                    ExpiredReminderScheduler.scheduleNextCheck(this);
                     runOnUiThread(() -> {
                         Toast.makeText(MainActivity.this, "已清空", Toast.LENGTH_SHORT).show();
                         loadTodos();
@@ -405,6 +424,7 @@ public class MainActivity extends AppCompatActivity {
         loadNotes();
         loadTodos();
         updateMessageBadge();
+        new Thread(() -> ExpiredReminderScheduler.scheduleNextCheck(MainActivity.this)).start();
         checkExpiredNotifications();
     }
 
@@ -415,6 +435,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkExpiredNotifications() {
-        new Thread(() -> NotificationHelper.notifyExpiredItemsIfNeeded(MainActivity.this)).start();
+        new Thread(() -> {
+            NotificationHelper.notifyExpiredItemsIfNeeded(MainActivity.this);
+            ExpiredReminderScheduler.scheduleNextCheck(MainActivity.this);
+        }).start();
+    }
+
+    private void requestNotificationPermissionIfNeeded() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) {
+            return;
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        ActivityCompat.requestPermissions(
+                this,
+                new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                REQUEST_CODE_POST_NOTIFICATIONS
+        );
     }
 }

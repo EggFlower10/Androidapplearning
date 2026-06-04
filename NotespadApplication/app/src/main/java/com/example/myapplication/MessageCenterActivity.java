@@ -14,6 +14,7 @@ import com.example.myapplication.utils.MessageCenterRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class MessageCenterActivity extends AppCompatActivity {
     private final List<MessageItem> allMessages = new ArrayList<>();
@@ -24,6 +25,8 @@ public class MessageCenterActivity extends AppCompatActivity {
     private TextView tvFilterUnread;
     private TextView tvFilterReminder;
     private TextView tvFilterSystem;
+    private TextView tvFilterTodo;
+    private TextView tvFilterNote;
     private TextView tvEmpty;
     private TextView tvUnreadSummary;
     private TextView tvUnreadBadge;
@@ -46,6 +49,8 @@ public class MessageCenterActivity extends AppCompatActivity {
         tvFilterUnread = findViewById(R.id.tv_filter_unread);
         tvFilterReminder = findViewById(R.id.tv_filter_reminder);
         tvFilterSystem = findViewById(R.id.tv_filter_system);
+        tvFilterTodo = findViewById(R.id.tv_filter_todo);
+        tvFilterNote = findViewById(R.id.tv_filter_note);
         tvEmpty = findViewById(R.id.tv_empty);
         tvUnreadSummary = findViewById(R.id.tv_unread_summary);
         tvUnreadBadge = findViewById(R.id.tv_unread_badge);
@@ -57,6 +62,7 @@ public class MessageCenterActivity extends AppCompatActivity {
     private void setupRecyclerView() {
         RecyclerView recyclerView = findViewById(R.id.rv_messages);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setNestedScrollingEnabled(true);
         adapter = new MessageCenterAdapter();
         adapter.setOnMessageClickListener(this::markMessageAsRead);
         recyclerView.setAdapter(adapter);
@@ -67,6 +73,8 @@ public class MessageCenterActivity extends AppCompatActivity {
         tvFilterUnread.setOnClickListener(v -> setFilter("unread"));
         tvFilterReminder.setOnClickListener(v -> setFilter("reminder"));
         tvFilterSystem.setOnClickListener(v -> setFilter("system"));
+        tvFilterTodo.setOnClickListener(v -> setFilter("todo"));
+        tvFilterNote.setOnClickListener(v -> setFilter("note"));
     }
 
     private void refreshMessages() {
@@ -79,7 +87,7 @@ public class MessageCenterActivity extends AppCompatActivity {
     private void updateSummary() {
         int unreadCount = MessageCenterRepository.getUnreadCount(this);
         tvUnreadSummary.setText(unreadCount + " 条未读消息");
-        tvUnreadBadge.setText(String.format("%02d", unreadCount));
+        tvUnreadBadge.setText(String.format(Locale.CHINA, "%02d", unreadCount));
     }
 
     private void setFilter(String filter) {
@@ -91,13 +99,12 @@ public class MessageCenterActivity extends AppCompatActivity {
     private void applyFilter() {
         visibleMessages.clear();
         for (MessageItem item : allMessages) {
-            if ("all".equals(currentFilter)) {
-                visibleMessages.add(item);
-            } else if ("unread".equals(currentFilter) && item.isUnread()) {
-                visibleMessages.add(item);
-            } else if ("reminder".equals(currentFilter) && isReminderCategory(item.getCategory())) {
-                visibleMessages.add(item);
-            } else if ("system".equals(currentFilter) && "系统消息".equals(item.getCategory())) {
+            if ("all".equals(currentFilter)
+                    || ("unread".equals(currentFilter) && item.isUnread())
+                    || ("reminder".equals(currentFilter) && isReminderCategory(item.getCategory()))
+                    || ("system".equals(currentFilter) && "系统消息".equals(item.getCategory()))
+                    || ("todo".equals(currentFilter) && MessageCenterRepository.RELATED_TYPE_TODO.equals(item.getRelatedType()))
+                    || ("note".equals(currentFilter) && MessageCenterRepository.RELATED_TYPE_NOTE.equals(item.getRelatedType()))) {
                 visibleMessages.add(item);
             }
         }
@@ -115,6 +122,8 @@ public class MessageCenterActivity extends AppCompatActivity {
         bindFilterState(tvFilterUnread, "unread".equals(currentFilter));
         bindFilterState(tvFilterReminder, "reminder".equals(currentFilter));
         bindFilterState(tvFilterSystem, "system".equals(currentFilter));
+        bindFilterState(tvFilterTodo, "todo".equals(currentFilter));
+        bindFilterState(tvFilterNote, "note".equals(currentFilter));
     }
 
     private void bindFilterState(TextView textView, boolean selected) {

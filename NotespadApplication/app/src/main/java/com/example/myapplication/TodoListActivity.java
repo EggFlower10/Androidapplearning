@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.myapplication.adapter.TodoListAdapter;
 import com.example.myapplication.database.NoteDatabase;
 import com.example.myapplication.entity.Todo;
+import com.example.myapplication.utils.ExpiredReminderScheduler;
 import com.example.myapplication.utils.NotificationHelper;
 import com.example.myapplication.utils.TimeUtil;
 import com.example.myapplication.utils.TodoRepeatHelper;
@@ -218,8 +219,10 @@ public class TodoListActivity extends AppCompatActivity {
         new Thread(() -> {
             if (completed && TodoRepeatHelper.isRepeating(todo)) {
                 TodoRepeatHelper.moveToNextOccurrence(todo);
+                todo.setHasSentExpiredReminder(false);
                 noteDatabase.todoDao().updateTodo(todo);
-                NotificationHelper.notifyTodoReminderSet(TodoListActivity.this, todo.getContent(), todo.getDeadline());
+                NotificationHelper.notifyTodoReminderSet(TodoListActivity.this, todo.getId(), todo.getContent(), todo.getDeadline());
+                ExpiredReminderScheduler.scheduleNextCheck(TodoListActivity.this);
                 todoList = noteDatabase.todoDao().getAllTodos();
                 runOnUiThread(() -> {
                     filterTodos();
@@ -232,7 +235,11 @@ public class TodoListActivity extends AppCompatActivity {
 
             todo.setCompleted(completed);
             todo.setUpdateTime(System.currentTimeMillis());
+            if (!completed) {
+                todo.setHasSentExpiredReminder(false);
+            }
             noteDatabase.todoDao().updateTodo(todo);
+            ExpiredReminderScheduler.scheduleNextCheck(TodoListActivity.this);
             todoList = noteDatabase.todoDao().getAllTodos();
             runOnUiThread(() -> {
                 filterTodos();
@@ -255,6 +262,7 @@ public class TodoListActivity extends AppCompatActivity {
                     for (Todo todo : selectedTodos) {
                         noteDatabase.todoDao().deleteTodo(todo);
                     }
+                    ExpiredReminderScheduler.scheduleNextCheck(TodoListActivity.this);
                     runOnUiThread(() -> {
                         loadTodos();
                         exitSelectMode();
@@ -276,13 +284,15 @@ public class TodoListActivity extends AppCompatActivity {
             for (Todo todo : selectedTodos) {
                 if (TodoRepeatHelper.isRepeating(todo)) {
                     TodoRepeatHelper.moveToNextOccurrence(todo);
-                    NotificationHelper.notifyTodoReminderSet(TodoListActivity.this, todo.getContent(), todo.getDeadline());
+                    todo.setHasSentExpiredReminder(false);
+                    NotificationHelper.notifyTodoReminderSet(TodoListActivity.this, todo.getId(), todo.getContent(), todo.getDeadline());
                 } else {
                     todo.setCompleted(true);
                     todo.setUpdateTime(System.currentTimeMillis());
                 }
                 noteDatabase.todoDao().updateTodo(todo);
             }
+            ExpiredReminderScheduler.scheduleNextCheck(TodoListActivity.this);
             runOnUiThread(() -> {
                 loadTodos();
                 exitSelectMode();

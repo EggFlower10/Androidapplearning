@@ -15,11 +15,13 @@ public class Note {
     private long createTime;
     private long updateTime;
     private int sortOrder;
+    private boolean hasSentExpiredReminder;
 
     public Note() {
         this.createTime = System.currentTimeMillis();
         this.updateTime = System.currentTimeMillis();
         this.sortOrder = 0;
+        this.hasSentExpiredReminder = false;
     }
 
     public long getId() {
@@ -92,5 +94,13 @@ public class Note {
 
     public void setSortOrder(int sortOrder) {
         this.sortOrder = sortOrder;
+    }
+
+    public boolean isHasSentExpiredReminder() {
+        return hasSentExpiredReminder;
+    }
+
+    public void setHasSentExpiredReminder(boolean hasSentExpiredReminder) {
+        this.hasSentExpiredReminder = hasSentExpiredReminder;
     }
 }
